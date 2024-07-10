@@ -2,35 +2,184 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>6Dreams</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Colombiatrón</title>
     <style>
-        body {
-            background-color: black;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
+body {
+    background-color: black;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    /* zoom: 150%; */ /* Eliminamos la propiedad zoom */
+}
         h1 {
             font-size: 5em;
+            margin-top: 10px; /* Ajuste de margen superior */
         }
-        img {
-            display: block;
-            max-width: 100%;
-            height: auto;
-            border: 5px solid #8B4513;
+        .card {
+            margin-top: 20px;
+            padding: 10px;
+            border: 10px solid #D4AF37;
+            background-color: #8B4513;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 80%;
+            position: relative;
+        }
+        .card-content {
+            background-size: cover;
+            background-position: center;
+            height: 200px; /* Ajustar la altura según sea necesario */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .game-container {
+            width: 800px;
+            height: 200px;
+            border: 2px solid #D4AF37;
+            overflow: hidden;
+            background-color: #f4f4f4;
+            position: relative;
+            margin: 0 auto;
+            background-image: url('fondo.jpg'); /* Fondo del card */
+        }
+        .character {
+            position: absolute;
+            bottom: 0;
+            left: 50px; /* Ajuste la posición inicial del personaje */
+            width: 120px; /* Aumentar el ancho del personaje */
+            height: 120px; /* Aumentar la altura del personaje */
+            background-image: url('image.png');
+            background-size: cover;
+        }
+        .obstacle {
+            position: absolute;
+            bottom: 0;
+            left: 800px; /* Posición inicial del obstáculo fuera del contenedor visible */
+            width: 50px;
+            height: 50px;
+            background-image: url('obstaculo.png');
+            background-size: cover;
+            animation: moveObstacle 2s linear infinite;
+        }
+        @keyframes moveObstacle {
+            0% { left: 800px; }
+            100% { left: -50px; } /* Movimiento desde el borde derecho hasta el izquierdo */
+        }
+        .jump {
+            animation: jump 0.8s; /* Aumentar la duración del salto */
+        }
+        @keyframes jump {
+            0% { bottom: 0; }
+            50% { bottom: 250px; } /* Ajustar para un salto más alto */
+            100% { bottom: 0; }
+        }
+        .score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 2em;
+            color: black;
         }
     </style>
 </head>
 <body>
-    <h1>6Dreams</h1>
+    <h1>Colombiatrón</h1>
     <div class="card">
-        <img src="image.png" alt="Image">
+        <div class="card-content">
+            <div class="game-container" id="game-container">
+                <div class="character" id="character"></div>
+                <div class="obstacle" id="obstacle"></div>
+                <div class="score" id="score">0</div>
+            </div>
+        </div>
     </div>
+    <audio id="background-audio" src="Audio.mp3" loop autoplay></audio>
+    <script>
+        let score = 0;
+        let isJumping = false;
+
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space' && !isJumping) {
+                jump();
+            }
+        });
+
+        function jump() {
+            const character = document.getElementById('character');
+            if (!isJumping) {
+                isJumping = true;
+                character.classList.add('jump');
+                setTimeout(function() {
+                    character.classList.remove('jump');
+                    isJumping = false;
+                }, 800); // Aumentar la duración del salto
+                updateScore();
+            }
+        }
+
+        function updateScore() {
+            score++;
+            document.getElementById('score').innerText = score;
+        }
+
+        function resetGame() {
+            score = 0;
+            document.getElementById('score').innerText = score;
+        }
+
+        // Mover el obstáculo de manera continua
+        setInterval(function() {
+            const obstacle = document.getElementById('obstacle');
+            obstacle.style.left = '800px'; // Restablecer la posición inicial
+            obstacle.classList.add('obstacle'); // Asegurarse de que tenga la clase de obstáculo
+        }, 4000); // Tiempo de vida del obstáculo
+
+        // Comprobar si el personaje colisiona con el obstáculo
+        let isAlive = setInterval(function() {
+            const character = document.getElementById('character');
+            const obstacle = document.getElementById('obstacle');
+
+            let characterBottom = parseInt(window.getComputedStyle(character).getPropertyValue('bottom'));
+            let characterLeft = parseInt(window.getComputedStyle(character).getPropertyValue('left'));
+            let characterRight = characterLeft + parseInt(window.getComputedStyle(character).getPropertyValue('width'));
+            let characterTop = characterBottom + parseInt(window.getComputedStyle(character).getPropertyValue('height'));
+
+            let obstacleLeft = parseInt(window.getComputedStyle(obstacle).getPropertyValue('left'));
+            let obstacleBottom = parseInt(window.getComputedStyle(obstacle).getPropertyValue('bottom'));
+            let obstacleRight = obstacleLeft + parseInt(window.getComputedStyle(obstacle).getPropertyValue('width'));
+            let obstacleTop = obstacleBottom + parseInt(window.getComputedStyle(obstacle).getPropertyValue('height'));
+
+            // Comprobar colisión
+            if (obstacleLeft < characterRight && obstacleRight > characterLeft &&
+                obstacleBottom <= characterTop && obstacleTop >= characterBottom) {
+                alert('Game Over!');
+                resetGame();
+            }
+        }, 10);
+
+        // Reproducir audio de fondo
+        window.onload = function() {
+            const audio = document.getElementById('background-audio');
+            audio.play().catch((error) => {
+                console.log('Autoplay was prevented. Click anywhere to play the audio.');
+                document.addEventListener('click', () => {
+                    audio.play();
+                }, { once: true });
+            });
+        };
+        
+    </script>
+    <!-- Footer -->
+    <footer style="position: fixed; bottom: 0; width: 100%; background-color: #333; color: white; text-align: center; padding: 10px 0;">
+        Made by: Manuwu
+    </footer>
 </body>
 </html>
